@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h3>Create New Image Build</h3>
+<hr>
+<form method="POST" action="/">
+    {{ form.hidden_tag() }}
+
+    <div class="form-group">
+        {{ form.oci_profile.label(class="form-control-label") }}
+        {{ form.oci_profile(class="form-control") }}
+        <small class="form-text text-muted">Select the OCI profile to use for authentication.</small>
+    </div>
+
+    <div class="form-group">
+        {{ form.base_image.label(class="form-control-label") }}
+        {{ form.base_image(class="form-control") }}
+    </div>
+
+    <div class="form-group">
+        {{ form.shape.label(class="form-control-label") }}
+        {{ form.shape(class="form-control") }}
+    </div>
+
+    <div id="flex-shape-options" style="display: none;">
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                {{ form.ocpus.label(class="form-control-label") }}
+                {{ form.ocpus(class="form-control") }}
+            </div>
+            <div class="form-group col-md-6">
+                {{ form.memory_in_gbs.label(class="form-control-label") }}
+                {{ form.memory_in_gbs(class="form-control") }}
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-group">
+        {{ form.packages.label(class="form-control-label") }}
+        {{ form.packages(class="form-control", rows=5, placeholder="Enter one package name per line (e.g., git, htop, python3)") }}
+    </div>
+
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const profileSelect = document.getElementById('oci_profile');
+    const imageSelect = document.getElementById('base_image');
+    const shapeSelect = document.getElementById('shape');
+    const flexOptions = document.getElementById('flex-shape-options');
+
+    function toggleFlexFields() {
+        const selectedShape = shapeSelect.value;
+        if (selectedShape && selectedShape.includes('Flex')) {
+            flexOptions.style.display = 'block';
+        } else {
+            flexOptions.style.display = 'none';
+        }
+    }
+
+    function updateShapes() {
+        const selectedProfile = profileSelect.value;
+        shapeSelect.innerHTML = '<option value="">Loading Shapes...</option>';
+        if (!selectedProfile) {
+            shapeSelect.innerHTML = '<option value="">--- Select Profile ---</option>';
+            return;
+        }
+
+        fetch(`/api/shapes/${selectedProfile}`)
+            .then(response => response.json())
+            .then(shapes => {
+                shapeSelect.innerHTML = '';
+                if (shapes.length === 0) {
+                    shapeSelect.innerHTML = '<option value="">--- No shapes found ---</option>';
+                } else {
+                    shapes.forEach(shape => {
+                        const option = new Option(shape.name, shape.id);
+                        shapeSelect.add(option);
+                    });
+                }
+                toggleFlexFields();
+            })
+            .catch(error => {
+                console.error('Error fetching shapes:', error);
+                shapeSelect.innerHTML = '<option value="">--- Error loading shapes ---</option>';
+            });
+    }
+
+    function updateImages() {
+        const selectedProfile = profileSelect.value;
+        imageSelect.innerHTML = '<option value="">Loading Images...</option>';
+        if (!selectedProfile) {
+            imageSelect.innerHTML = '<option value="">--- Select Profile ---</option>';
+            return;
+        }
+
+        fetch(`/api/images/${selectedProfile}`)
+            .then(response => response.json())
+            .then(images => {
+                imageSelect.innerHTML = '';
+                if (images.length === 0) {
+                    imageSelect.innerHTML = '<option value="">--- No images found ---</option>';
+                } else {
+                    images.forEach(image => {
+                        const option = new Option(image.name, image.id);
+                        imageSelect.add(option);
+                    });
+                    updateShapes();
+                }
+            });
+    }
+
+    profileSelect.addEventListener('change', function() {
+        updateImages();
+    });
+    shapeSelect.addEventListener('change', toggleFlexFields);
+
+    updateImages();
+});
+</script>
+{% endblock %}

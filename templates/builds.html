@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Build History</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Cloud</th>
+                <th>Base Image</th>
+                <th>Status</th>
+                <th>Submitted</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for build in builds %}
+            <tr>
+                <td>{{ build.id }}</td>
+                <td>{{ build.cloud_provider }}</td>
+                <td>{{ build.base_image }}</td>
+                <td>{{ build.status }}</td>
+                <td>{{ build.created_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5">No build requests have been submitted yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
